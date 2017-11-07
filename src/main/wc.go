@@ -26,17 +26,9 @@ func mapF(filename string, contents string) []mapreduce.KeyValue {
             return !unicode.IsLetter(c)
     })
     for _, word := range strs {
-//        if _, ok := wordCount[word]; ok {
-//            wordCount[word] += 1
-//        } else {
-//            wordCount[word] = 0
-//        }
         kvs = append(kvs, mapreduce.KeyValue{word, "1"})
     }
 
-//    for k, v := range wordCount {
-//        kvs = append(kvs, mapreduce.KeyValue{k, strconv.Itoa(v)})
-//    }
     return kvs
 }
 

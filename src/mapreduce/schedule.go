@@ -1,7 +1,8 @@
 package mapreduce
 
 import "fmt"
-
+import "sync"
+//import "net/rpc"
 //
 // schedule() starts and waits for all tasks in the given phase (Map
 // or Reduce). the mapFiles argument holds the names of the files that
@@ -22,7 +23,7 @@ func schedule(jobName string, mapFiles []string, nReduce int, phase jobPhase, re
 		ntasks = nReduce
 		n_other = len(mapFiles)
 	}
-
+	fmt.Printf("111\n")
 	fmt.Printf("Schedule: %v %v tasks (%d I/Os)\n", ntasks, phase, n_other)
 
 	// All ntasks tasks have to be scheduled on workers, and only once all of
@@ -32,5 +33,30 @@ func schedule(jobName string, mapFiles []string, nReduce int, phase jobPhase, re
 	//
 	// TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO
 	//
+	var wg sync.WaitGroup
+    for i := 0; i < ntasks; i ++ {
+		wg.Add(1)
+		// one thread for one task
+		go func(id int, phase jobPhase, n_other int){
+			defer wg.Done()
+			for{
+				// get an worker, call DoTask, until finish
+				worker:=<-registerChan
+				
+				var args DoTaskArgs = DoTaskArgs{jobName, mapFiles[id], phase, id, n_other}
+				ok := call(worker, "Worker.DoTask", &args, new(struct{}))
+				if ok{
+					fmt.Printf("Call worker:%s ok\n", worker)
+					go func(){
+						registerChan<-worker
+					}()
+					fmt.Printf("Call worker:%s ok\n", worker)
+					break
+				}		
+			}
+		}(i, phase, n_other)
+		wg.Wait()
+
+	}
 	fmt.Printf("Schedule: %v phase done\n", phase)
 }
